@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" data-theme="dark">
+<head th:replace="~{fragments/fragments :: head('Error')}"></head>
+<body>
+<div class="noise"></div>
+<div class="auth-split">
+  <div class="flex flex-col justify-center items-center p-8 md:p-12" style="position:relative;z-index:2;min-height:100vh">
+    <a th:href="@{/}" class="flex items-center gap-2 w-fit mb-12" style="text-decoration:none">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,var(--accent),var(--accent-2))">
+        <span class="font-display text-lg" style="color:white">L</span>
+      </div>
+      <span class="font-semibold" style="color:var(--text-0)">Ledger<span style="color:var(--accent)">.</span></span>
+    </a>
+
+    <div class="text-center max-w-md">
+      <div class="text-7xl font-display mb-4" style="color:var(--accent);letter-spacing:-0.05em"
+           th:text="${status} ?: '500'">500</div>
+      <h1 class="text-2xl font-semibold mb-3" style="color:var(--text-0)"
+          th:text="${error} ?: 'Something went wrong'">Something went wrong</h1>
+      <p class="muted mb-8"
+         th:text="${message} ?: 'An unexpected error occurred. Please try again or go back to the dashboard.'">
+        An unexpected error occurred. Please try again.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <a th:href="@{/dashboard}" class="btn btn-primary">Go to Dashboard</a>
+        <a th:href="@{/}" class="btn btn-ghost">Home</a>
+      </div>
+    </div>
+  </div>
+</div>
+<script th:src="@{/js/app.js}" src="/js/app.js"></script>
+</body>
+</html>

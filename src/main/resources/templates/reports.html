@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Reports', 'reports', 'Your money, visualized')}">
+<body>
+
+<section th:fragment="content">
+
+  <div class="flex items-start justify-between mb-6 flex-wrap gap-4 fade-up">
+    <div>
+      <h1 class="section-title font-display" style="font-size:36px">
+        Your <em style="font-style:italic;color:var(--accent)">reports</em>
+      </h1>
+      <p class="section-sub"><span th:text="${period.label} ?: 'Monthly breakdown · April 2026'">Monthly breakdown · April 2026</span></p>
+    </div>
+    <form th:action="@{/reports}" method="get" class="flex items-center gap-2 flex-wrap">
+      <div class="segmented" id="periodSeg">
+        <button type="button" th:classappend="${period == null or period.mode == 'monthly'} ? ' active'" data-mode="monthly">Monthly</button>
+        <button type="button" th:classappend="${period != null and period.mode == 'quarterly'} ? ' active'" data-mode="quarterly">Quarterly</button>
+        <button type="button" th:classappend="${period != null and period.mode == 'yearly'} ? ' active'" data-mode="yearly">Yearly</button>
+      </div>
+      <input type="hidden" name="mode" id="modeInput" th:value="${period != null ? period.mode : 'monthly'}" value="monthly"/>
+
+      <select class="btn btn-soft btn-sm" name="month" style="padding:7px 12px">
+        <option th:each="m : ${period != null ? period.months : {'Apr 2026','Mar 2026','Feb 2026'}}"
+                th:value="${m}" th:text="${m}" th:selected="${period != null and period.month == m}">Apr 2026</option>
+      </select>
+
+      <a th:href="@{/reports/export(format='csv',mode=${period != null ? period.mode : 'monthly'},month=${period != null ? period.month : 'Apr 2026'})}"
+         class="btn btn-primary btn-sm" style="padding:7px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </a>
+    </form>
+  </div>
+
+  <!-- Hero stats -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 fade-up-stagger">
+    <div class="stat-card" style="--glow-c:rgba(124,92,255,0.14)">
+      <div class="text-xs dim uppercase tracking-wider mb-3">Total expenses</div>
+      <div class="font-display text-4xl tracking-tightest private" style="color:var(--text-0)"
+           th:text="${stats != null ? stats.totalSpentFmt : '24,380 INR'}">₹24,380</div>
+      <div class="flex items-center gap-2 mt-3 text-xs">
+        <span class="chip chip-danger" th:text="${stats != null ? stats.spentDelta : '+8.2%'}">+8.2%</span>
+        <span class="dim">vs previous period</span>
+      </div>
+    </div>
+    <div class="stat-card" style="--glow-c:rgba(52,211,153,0.14)">
+      <div class="text-xs dim uppercase tracking-wider mb-3">Income</div>
+      <div class="font-display text-4xl tracking-tightest private" style="color:var(--text-0)"
+           th:text="${stats != null ? stats.incomeFmt : '58,000 INR'}">₹58,000</div>
+      <div class="flex items-center gap-2 mt-3 text-xs">
+        <span class="chip chip-success" th:text="${stats != null ? stats.incomeDelta : '+4.0%'}">+4.0%</span>
+        <span class="dim">vs previous</span>
+      </div>
+    </div>
+    <div class="stat-card" style="--glow-c:rgba(167,139,250,0.14)">
+      <div class="text-xs dim uppercase tracking-wider mb-3">Net savings</div>
+      <div class="font-display text-4xl tracking-tightest private" style="color:var(--text-0)"
+           th:text="${stats != null ? stats.savingsFmt : '33,620 INR'}">₹33,620</div>
+      <div class="flex items-center gap-2 mt-3 text-xs">
+        <span class="chip chip-info"><span th:text="${stats != null ? stats.savingsPct : '58'}">58</span>% rate</span>
+        <span class="dim">Excellent</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts: trend + budget vs actual -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    <div class="glass p-6">
+      <h3 class="text-lg font-semibold mb-1" style="color:var(--text-0)">6-month trend</h3>
+      <p class="text-sm muted mb-4">Spending vs income over time</p>
+      <div style="height:280px"><canvas id="trend6" data-chart="trend6"></canvas></div>
+    </div>
+    <div class="glass p-6">
+      <h3 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Budget vs actual</h3>
+      <p class="text-sm muted mb-4">How close you came to plan</p>
+      <div style="height:280px"><canvas id="bva" data-chart="bva"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Donut + top merchants -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+    <div class="glass p-6 lg:col-span-2">
+      <h3 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Where it went</h3>
+      <p class="text-sm muted mb-4">Category breakdown</p>
+      <div style="height:240px"><canvas id="donut2" data-chart="donut"></canvas></div>
+    </div>
+    <div class="glass p-6 lg:col-span-3">
+      <h3 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Top merchants</h3>
+      <p class="text-sm muted mb-4">Who got the biggest slice</p>
+      <div id="merchantList">
+        <!-- Server-rendered -->
+        <div th:each="m : ${topMerchants}" class="flex items-center gap-4 py-3" style="border-bottom:1px solid var(--border)">
+          <span class="cat-icon" th:classappend="' cat-' + ${m.category}" th:text="${m.icon}">💳</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium" style="color:var(--text-0)" th:text="${m.name}">Swiggy</span>
+              <span class="font-display private" style="color:var(--text-0)" th:text="${m.amountFmt}">₹4,920</span>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="dim"><span th:text="${m.count}">18</span> transactions</span>
+              <div class="flex-1 progress" style="height:4px"><div class="progress-fill" th:style="'width:' + ${m.pct} + '%'"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar heatmap -->
+  <div class="glass p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-semibold" style="color:var(--text-0)">Spending calendar</h3>
+        <p class="text-sm muted">No-spend days in green · darker = more spent</p>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="cal-day no-spend" style="width:12px;height:12px" data-tip="No spend"></span>
+        <span class="cal-day low" style="width:12px;height:12px"></span>
+        <span class="cal-day mid" style="width:12px;height:12px"></span>
+        <span class="cal-day high" style="width:12px;height:12px"></span>
+        <span class="dim">less → more</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-7 gap-2" id="calGrid"></div>
+  </div>
+
+</section>
+
+<th:block th:fragment="scripts">
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    setChartDefaults();
+
+    const trendData = /*[[${trendChartData}]]*/ null;
+    const catData   = /*[[${categoryChartData}]]*/ null;
+
+    // 6-month trend bar chart — real data only
+    if (trendData && trendData.hasData && document.getElementById('trend6')) {
+      new Chart(document.getElementById('trend6'), {
+        type: 'bar',
+        data: {
+          labels: trendData.labels,
+          datasets: [
+            { label: 'Spent', data: trendData.data, backgroundColor: 'rgba(124,92,255,0.75)', borderRadius: 6, barThickness: 18 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } },
+          scales: { y: { ticks: { callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) } }, x: { grid: { display: false } } }
+        }
+      });
+    }
+
+    // Budget vs actual — only if real budget/category data available
+    if (catData && catData.hasData && document.getElementById('bva')) {
+      new Chart(document.getElementById('bva'), {
+        type: 'bar',
+        data: {
+          labels: catData.labels,
+          datasets: [
+            { label: 'Actual', data: catData.data, backgroundColor: 'rgba(124,92,255,0.8)', borderRadius: 4, barThickness: 18 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } },
+          scales: { y: { ticks: { callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) } }, x: { grid: { display: false } } }
+        }
+      });
+    }
+
+    // Donut by category — real data only
+    if (catData && catData.hasData && document.getElementById('donut2')) {
+      const palette = ['#f87171','#60a5fa','#f472b6','#fbbf24','#a78bfa','#34d399','#fb923c','#94a3b8'];
+      const colors = catData.labels.map((_, i) => palette[i % palette.length]);
+      new Chart(document.getElementById('donut2'), {
+        type: 'doughnut',
+        data: { labels: catData.labels, datasets: [{ data: catData.data, backgroundColor: colors, borderWidth: 0, hoverOffset: 8 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, padding: 12 } } } }
+      });
+    }
+
+    // Calendar heatmap — based on current day, no fake data
+    const grid = document.getElementById('calGrid');
+    if (grid) {
+      ['M','T','W','T','F','S','S'].forEach(d => {
+        const h = document.createElement('div'); h.className = 'text-xs dim text-center py-1'; h.textContent = d; grid.appendChild(h);
+      });
+      const todayDay = new Date().getDate();
+      const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+        const d = document.createElement('div');
+        d.className = 'cal-day' + (i === todayDay ? ' today' : '');
+        d.textContent = i;
+        grid.appendChild(d);
+      }
+    }
+
+    // Mode segmented
+    document.querySelectorAll('#periodSeg button').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('#periodSeg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('modeInput').value = b.dataset.mode;
+    }));
+    /*]]>*/
+  </script>
+</th:block>
+
+</body>
+</html>

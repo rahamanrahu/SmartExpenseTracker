@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Budgets & Goals', 'budgets', 'Set intentions. Hit them gently.')}">
+<body>
+
+<section th:fragment="content">
+
+  <div class="flex items-start justify-between mb-6 flex-wrap gap-4 fade-up">
+    <div>
+      <h1 class="section-title font-display" style="font-size:36px">
+        Budgets <em style="font-style:italic;color:var(--accent)">&amp;</em> goals
+      </h1>
+      <p class="section-sub">Set gentle ceilings. Track meaningful targets.</p>
+    </div>
+    <div class="segmented" id="viewSeg">
+      <button type="button" class="active" data-view="budgets">Budgets</button>
+      <button type="button" data-view="goals">Goals</button>
+    </div>
+  </div>
+
+  <!-- Overall budget ring -->
+  <div class="glass p-8 mb-6 relative overflow-hidden" style="background:linear-gradient(135deg,rgba(124,92,255,0.06),transparent)">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+      <div class="flex items-center justify-center relative">
+        <svg width="200" height="200" viewBox="0 0 200 200" id="overallRing">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#7c5cff"/>
+              <stop offset="100%" stop-color="#5b7cff"/>
+            </linearGradient>
+          </defs>
+          <circle cx="100" cy="100" r="86" fill="none" stroke="var(--bg-3)" stroke-width="12"/>
+          <circle cx="100" cy="100" r="86" fill="none" stroke="url(#ringGrad)" stroke-width="12" stroke-linecap="round"
+                  th:stroke-dashoffset="${overall != null ? overall.ringOffset : 211}" stroke-dasharray="540" stroke-dashoffset="211"
+                  transform="rotate(-90 100 100)" style="filter:drop-shadow(0 0 12px rgba(124,92,255,0.4));transition:stroke-dashoffset 800ms var(--ease)"/>
+        </svg>
+        <div style="position:absolute;text-align:center">
+          <div class="text-xs dim uppercase tracking-wider">Used</div>
+          <div class="font-display text-5xl" style="color:var(--text-0)">
+            <span th:text="${overall != null ? overall.pct : 61}">61</span><span style="font-size:28px;color:var(--text-3)">%</span>
+          </div>
+          <div class="text-xs muted mt-1">of <span th:text="${overall != null ? overall.totalFmt : '40,000 INR'}">₹40,000</span></div>
+        </div>
+      </div>
+      <div class="md:col-span-2">
+        <div class="chip chip-info mb-3">
+          <span class="chip-dot" style="background:#a5b4fc"></span>
+          Monthly budget ·
+          <span th:text="${overall != null ? overall.periodLabel : 'April 2026'}">April 2026</span>
+        </div>
+        <h2 class="font-display text-4xl mb-3" style="color:var(--text-0);letter-spacing:-0.02em">
+          You're pacing <em th:text="${overall != null ? overall.sentimentWord : 'comfortably'}" style="color:var(--success);font-style:italic">comfortably</em>.
+        </h2>
+        <p class="muted mb-6" th:text="${overall != null ? overall.narrative : 'You have 15,620 INR left for the next 11 days. That''s about 1,420 INR/day if you keep the current rhythm.'}">
+          You have ₹15,620 left for the next 11 days. That's about ₹1,420/day if you keep the current rhythm.
+        </p>
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <div class="text-xs dim uppercase tracking-wider mb-1">Spent</div>
+            <div class="font-display text-xl private" style="color:var(--text-0)" th:text="${overall != null ? overall.spentFmt : '24,380 INR'}">₹24,380</div>
+          </div>
+          <div>
+            <div class="text-xs dim uppercase tracking-wider mb-1">Remaining</div>
+            <div class="font-display text-xl private" style="color:var(--success)" th:text="${overall != null ? overall.remainingFmt : '15,620 INR'}">₹15,620</div>
+          </div>
+          <div>
+            <div class="text-xs dim uppercase tracking-wider mb-1">Projected</div>
+            <div class="font-display text-xl private" style="color:var(--text-0)" th:text="${overall != null ? overall.projectedFmt : '38,820 INR'}">₹38,820</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUDGETS VIEW -->
+  <div id="view-budgets">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold" style="color:var(--text-0)">Category budgets</h2>
+      <button type="button" class="btn btn-soft btn-sm" data-modal-open="budgetModal" style="padding:7px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New budget
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8" id="budgetGrid">
+      <!-- Server-rendered budget cards -->
+      <div th:each="b : ${budgets}" class="glass p-5 card-hover"
+           th:classappend="' cat-' + ${b.category} + (${b.pct >= 100} ? ' over-limit' : '')">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="cat-icon" style="font-size:18px" th:text="${b.emoji}">🍽</div>
+            <div>
+              <div class="font-medium" style="color:var(--text-0)" th:text="${b.name}">Food</div>
+              <div class="text-xs dim mt-0.5" th:text="${b.budgetFmt} + ' / month'">₹9,000 / month</div>
+            </div>
+          </div>
+          <span class="chip"
+                th:classappend="${b.pct >= 95 ? ' chip-danger' : (b.pct >= 80 ? ' chip-warn' : ' chip-success')}"
+                th:text="${b.pct} + '%'">92%</span>
+        </div>
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="font-display text-2xl private" style="color:var(--text-0)" th:text="${b.spentFmt}">₹8,240</div>
+          <div class="text-xs muted private">
+            <span th:text="${b.remainingFmt}">₹760</span> left
+          </div>
+        </div>
+        <div class="progress">
+          <div th:class="${b.pct >= 95 ? 'progress-fill danger' : (b.pct >= 80 ? 'progress-fill warn' : 'progress-fill')}"
+               th:style="'width:' + ${#numbers.formatDecimal(b.pct > 100 ? 100 : b.pct,1,'COMMA',0,'POINT')} + '%'"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOALS VIEW -->
+  <div id="view-goals" style="display:none">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-xl font-semibold" style="color:var(--text-0)">Saving goals</h2>
+        <p class="section-sub">Saving for something bigger</p>
+      </div>
+      <button type="button" class="btn btn-soft btn-sm" data-modal-open="goalModal" style="padding:7px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="22" x2="4" y2="15"/><path d="M4 15l8-4 8 4v-8l-8 4-8-4z"/></svg>
+        New goal
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8" id="goalsGrid">
+      <div th:each="g : ${goals}" class="glass p-6 card-hover">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl"
+               th:style="'background:' + ${g.color} + '20;color:' + ${g.color}" th:text="${g.emoji}">🛟</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium" style="color:var(--text-0)" th:text="${g.name}">Emergency fund</div>
+            <div class="text-xs dim mt-0.5">By <span th:text="${g.deadline}">Dec 2026</span></div>
+          </div>
+          <div class="font-display text-2xl" th:style="'color:' + ${g.color}" th:text="${g.pct} + '%'">85%</div>
+        </div>
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="font-display text-xl private" style="color:var(--text-0)" th:text="${g.savedFmt}">₹85,000</div>
+          <div class="text-sm muted private">of <span th:text="${g.targetFmt}">₹1,00,000</span></div>
+        </div>
+        <div class="progress">
+          <div class="progress-fill" th:style="'width:' + ${g.pct} + '%;background:linear-gradient(90deg,' + ${g.color} + ',' + ${g.color} + '99)'"></div>
+        </div>
+        <button type="button" class="btn btn-soft btn-sm w-full mt-3"
+                th:attr="onclick='openContributeModal(' + ${g.id} + ')'"
+                style="font-size:12px">
+          + Add funds
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Streak -->
+  <div class="glass p-6 mb-6" style="background:linear-gradient(135deg,rgba(251,191,36,0.04),transparent)">
+    <div class="flex items-center gap-4 mb-4">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:rgba(251,191,36,0.15);color:#fbbf24;font-size:24px">🔥</div>
+      <div>
+        <h3 class="text-lg font-semibold" style="color:var(--text-0)">
+          <span th:text="${streak != null ? streak.days : 5}">5</span>-day spending streak
+        </h3>
+        <p class="text-sm muted">You've stayed under daily budget for <span th:text="${streak != null ? streak.days : 5}">5</span> days in a row. Nice.</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 mt-2" id="streakDots"></div>
+  </div>
+
+  <!-- Add-Budget Modal -->
+  <div class="modal-backdrop" id="budgetModal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="flex items-start justify-between p-6 pb-2">
+        <h3 class="text-lg font-semibold" style="color:var(--text-0)">New budget</h3>
+        <button type="button" class="btn-icon" data-modal-close aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form th:action="@{/budgets}" method="post" th:object="${budgetForm}" class="px-6 pb-6">
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <div class="mb-4">
+          <label class="label" for="budgetCategory">Category</label>
+          <select class="input" id="budgetCategory" name="category" th:field="*{category}" required>
+            <option value="food">🍽 Food</option>
+            <option value="transport">🚗 Transport</option>
+            <option value="shopping">🛍 Shopping</option>
+            <option value="bills">⚡ Bills</option>
+            <option value="entertainment">🎬 Entertainment</option>
+            <option value="health">❤️ Health</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="label" for="budgetAmount">Monthly cap (₹)</label>
+          <input class="input" type="number" id="budgetAmount" name="amount" th:field="*{amount}" step="0.01" min="0" required/>
+        </div>
+        <div class="mb-4">
+          <label class="label" for="budgetPeriod">Period</label>
+          <select class="input" id="budgetPeriod" name="period" th:field="*{period}">
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Create budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add-Goal Modal -->
+  <div class="modal-backdrop" id="goalModal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="flex items-start justify-between p-6 pb-2">
+        <h3 class="text-lg font-semibold" style="color:var(--text-0)">New goal</h3>
+        <button type="button" class="btn-icon" data-modal-close aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form th:action="@{/goals}" method="post" th:object="${goalForm}" class="px-6 pb-6">
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <div class="mb-4">
+          <label class="label" for="goalName">Name</label>
+          <input class="input" type="text" id="goalName" name="name" th:field="*{name}" placeholder="e.g. Emergency fund" required/>
+        </div>
+        <div class="mb-4">
+          <label class="label" for="goalEmoji">Emoji / Icon</label>
+          <input class="input" type="text" id="goalEmoji" name="emoji" th:field="*{emoji}" placeholder="🎯" maxlength="4"/>
+        </div>
+        <div class="mb-4">
+          <label class="label" for="goalTarget">Target amount (₹)</label>
+          <input class="input" type="number" id="goalTarget" name="targetAmount" th:field="*{targetAmount}" step="0.01" min="0" required/>
+        </div>
+        <div class="mb-4">
+          <label class="label" for="goalCurrent">Already saved (₹)</label>
+          <input class="input" type="number" id="goalCurrent" name="currentAmount" th:field="*{currentAmount}" step="0.01" min="0"/>
+        </div>
+        <div class="mb-4">
+          <label class="label" for="goalDeadline">Target date</label>
+          <input class="input" type="date" id="goalDeadline" name="deadline" th:field="*{deadline}"/>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Create goal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</section>
+
+<!-- Contribute Modal -->
+<div class="modal-backdrop" id="contributeModal" role="dialog" aria-labelledby="contributeTitle" aria-modal="true">
+  <div class="modal" style="max-width:400px">
+    <div class="flex items-start justify-between p-6 pb-2">
+      <h3 id="contributeTitle" class="text-lg font-semibold" style="color:var(--text-0)">Add funds to goal</h3>
+      <button type="button" class="btn-icon" data-modal-close aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="contributeForm" method="post" class="px-6 pb-6">
+      <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="mb-4">
+        <label class="label" for="contributeAmount">Amount to add (₹)</label>
+        <input class="input" type="number" id="contributeAmount" name="amount" step="0.01" min="0.01" required
+               placeholder="0.00"/>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="button" class="btn btn-ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Add funds</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<th:block th:fragment="scripts">
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    // Streak dots — real computed streak from server
+    const streakHost = document.getElementById('streakDots');
+    const streakLen = /*[[${streak != null ? streak.days : 0}]]*/ 0;
+    if (streakHost) {
+      for (let i = 0; i < 30; i++) {
+        const d = document.createElement('div');
+        const lit = i < streakLen;
+        d.style.cssText = `width:16px;height:16px;border-radius:4px;background:${lit ? 'linear-gradient(135deg,#fbbf24,#f59e0b)' : 'var(--bg-3)'};${lit ? 'box-shadow:0 0 8px rgba(251,191,36,0.4)' : ''}`;
+        streakHost.appendChild(d);
+      }
+    }
+
+    // View switcher
+    document.querySelectorAll('#viewSeg button').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('#viewSeg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('view-budgets').style.display = b.dataset.view === 'budgets' ? 'block' : 'none';
+      document.getElementById('view-goals').style.display   = b.dataset.view === 'goals'   ? 'block' : 'none';
+    }));
+
+    // Contribute modal — set form action to /goals/{id}/contribute
+    function openContributeModal(goalId) {
+      const form = document.getElementById('contributeForm');
+      if (form) form.action = '/goals/' + goalId + '/contribute';
+      if (typeof openModal === 'function') openModal('contributeModal');
+      else {
+        const m = document.getElementById('contributeModal');
+        if (m) { m.classList.add('active'); setTimeout(() => { const inp = m.querySelector('input'); if (inp) inp.focus(); }, 50); }
+      }
+    }
+
+    // Over-limit toast on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.over-limit').forEach(card => {
+        const name = card.querySelector('[class*="font-medium"]');
+        if (name && typeof toast === 'function') {
+          toast('error', '⚠ You\'ve exceeded your ' + name.textContent.trim() + ' budget.');
+        }
+      });
+    });
+    /*]]>*/
+  </script>
+</th:block>
+
+</body>
+</html>

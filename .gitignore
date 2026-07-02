@@ -1,0 +1,52 @@
+# ============================================================
+# Smart Expense Tracker — .gitignore
+# Spring Boot + Maven project
+# ============================================================
+
+# ----- Maven build output -----
+target/
+*.class
+.mvn/wrapper/dist/
+
+# ----- Local JDK (bundled, not project source) -----
+.jdk/
+
+# ----- Extracted / exploded JAR artifacts -----
+app/
+
+# ----- Duplicate nested project copy -----
+SmartExpenseTracker/
+
+# ----- Runtime log files -----
+*.log
+*.log.*.gz
+*.gz
+
+# ----- Generated export dumps -----
+export.txt
+
+# ----- Tool binaries -----
+vineflower*.jar
+
+# ----- IDE / Editor settings -----
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ----- OS junk -----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----- Environment / secrets (never commit!) -----
+.env
+*.env
+application-prod.properties
+application-prod.yml
+application-secret.properties
+application-secret.yml
+
+# ----- Spring Boot dev-tools restart trigger -----
+.reloadtrigger

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" data-theme="dark">
+<head th:replace="~{fragments/fragments :: head('Page not found')}"></head>
+<body>
+
+<div class="noise"></div>
+
+<!-- Ambient glow -->
+<div aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden">
+  <div style="position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,255,0.18) 0%,transparent 60%);filter:blur(40px)"></div>
+</div>
+
+<main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:2">
+  <div class="text-center max-w-lg">
+
+    <a th:href="@{/}" class="inline-flex items-center gap-2 mb-12" style="text-decoration:none">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,var(--accent),var(--accent-2))">
+        <span class="font-display text-lg" style="color:white">L</span>
+      </div>
+      <span class="font-semibold" style="color:var(--text-0)">Ledger<span style="color:var(--accent)">.</span></span>
+    </a>
+
+    <div class="font-display mb-4" style="font-size:160px;line-height:1;letter-spacing:-0.04em;background:linear-gradient(135deg,#a78bfa 0%,#7c5cff 50%,#5b7cff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">404</div>
+
+    <h1 class="font-display text-4xl mb-3" style="color:var(--text-0);letter-spacing:-0.03em">This page wandered off.</h1>
+
+    <p class="muted mb-8" style="max-width:400px;margin-left:auto;margin-right:auto">
+      The link might be broken, or the page may have moved. Let's get you back on track.
+    </p>
+
+    <!-- Optional: show the path Spring tried to match -->
+    <div th:if="${path != null or error != null}" class="glass p-3 mb-6 inline-flex items-center gap-2 text-xs" style="color:var(--text-2);font-family:ui-monospace,SFMono-Regular,Menlo,monospace">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span th:text="${path} ?: ${error}">/missing</span>
+      <span th:if="${status}" class="chip chip-danger text-[10px]" style="padding:1px 6px" th:text="${status}">404</span>
+    </div>
+
+    <div class="flex gap-3 justify-center flex-wrap">
+      <a th:href="@{/}" class="btn btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Go home
+      </a>
+      <a th:href="@{/dashboard}" class="btn btn-soft">Go to dashboard</a>
+      <button type="button" onclick="history.back()" class="btn btn-ghost">Go back</button>
+    </div>
+
+    <p class="text-xs dim mt-12">
+      Think this is a bug? <a href="mailto:help@ledger.app" class="link-accent">help@ledger.app</a>
+    </p>
+  </div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Dashboard', 'dashboard', 'Your money, at a glance')}">
+<body>
+
+<section th:fragment="content">
+
+  <!-- Greeting -->
+  <div class="mb-6 fade-up">
+    <div class="flex items-center gap-3 mb-2">
+      <span class="chip chip-info">
+        <span class="chip-dot" style="background:#a5b4fc"></span>
+        <span th:text="${greeting} ?: 'Good morning'">Good morning</span>
+      </span>
+      <span class="text-xs dim" th:text="${#temporals.format(#temporals.createNow(),'EEEE, MMMM d')}">Monday, April 21</span>
+    </div>
+    <h1 class="section-title font-display" style="font-size:36px">
+      Welcome back,
+      <em style="font-style:italic;color:var(--accent)" th:text="${user != null ? user.name : 'User'}">User</em>
+    </h1>
+    <p class="section-sub" th:text="${periodLabel}">Here is how your money moved this month.</p>
+  </div>
+
+  <!-- Stat cards — real data only -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 fade-up-stagger" id="statGrid">
+    <div class="stat-card" style="--glow-c:rgba(248,113,113,0.14)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs dim uppercase tracking-wider">Spent this month</span>
+      </div>
+      <div class="text-3xl font-display tracking-tightest display-num private" style="color:var(--text-0)"
+           th:text="${stats != null ? stats.spentFmt : '₹0'}">₹0</div>
+      <div class="text-xs dim mt-2" th:if="${stats != null and stats.hasBudget}">
+        of <span th:text="${stats.budgetFmt}">₹0</span> budget
+      </div>
+      <div class="text-xs dim mt-2" th:unless="${stats != null and stats.hasBudget}">
+        <a th:href="@{/budgets}" class="link-accent">Set a budget →</a>
+      </div>
+    </div>
+    <div class="stat-card" style="--glow-c:rgba(52,211,153,0.14)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs dim uppercase tracking-wider">Budget left</span>
+        <span class="chip chip-success text-[11px]"
+              th:if="${stats != null and stats.hasBudget}"
+              th:text="${stats.budgetLeftPct + '%'}">—</span>
+      </div>
+      <div class="text-3xl font-display tracking-tightest display-num private" style="color:var(--text-0)"
+           th:if="${stats != null and stats.hasBudget}"
+           th:text="${stats.budgetLeftFmt}">₹0</div>
+      <div class="text-3xl font-display" style="color:var(--text-3)"
+           th:unless="${stats != null and stats.hasBudget}">—</div>
+      <div class="progress mt-3" th:if="${stats != null and stats.hasBudget}">
+        <div class="progress-fill" th:style="'width:' + ${stats.budgetUsedPct} + '%'"></div>
+      </div>
+    </div>
+    <div class="stat-card sm:col-span-2 lg:col-span-1" style="--glow-c:rgba(124,92,255,0.14)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs dim uppercase tracking-wider">Total expenses logged</span>
+      </div>
+      <div class="text-3xl font-display tracking-tightest" style="color:var(--text-0)"
+           th:text="${totalCount != null ? totalCount : '0'}">0</div>
+      <div class="text-xs dim mt-2">transactions recorded</div>
+    </div>
+  </div>
+
+  <!-- Charts — only shown when user has expenses -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6" th:if="${hasExpenses}">
+    <div class="glass p-6 lg:col-span-2">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-semibold" style="color:var(--text-0)">Spending trend</h3>
+          <p class="text-sm muted">Monthly spend over the last 6 months</p>
+        </div>
+      </div>
+      <div style="height:280px"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="glass p-6">
+      <h3 class="text-lg font-semibold mb-1" style="color:var(--text-0)">By category</h3>
+      <p class="text-sm muted mb-4">Where your money went</p>
+      <div style="height:220px"><canvas id="donutChart"></canvas></div>
+      <div class="mt-4 space-y-2" id="catLegend"></div>
+    </div>
+  </div>
+
+  <!-- Empty state — no expenses yet -->
+  <div class="glass p-12 mb-6 text-center" th:unless="${hasExpenses}">
+    <div class="empty-icon mx-auto mb-4" style="width:64px;height:64px">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+      </svg>
+    </div>
+    <h3 class="text-xl font-semibold mb-2" style="color:var(--text-0)">No expenses yet</h3>
+    <p class="text-sm dim mb-6 max-w-sm mx-auto">Start tracking your spending by logging your first expense. Your charts and insights will appear here.</p>
+    <button type="button" class="btn btn-primary" data-modal-open="expenseModal">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Log your first expense
+    </button>
+  </div>
+
+  <!-- AI insight — only if user has data -->
+  <div th:if="${aiInsight != null}" class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <div class="glass p-6 lg:col-span-2" style="background:linear-gradient(135deg,rgba(124,92,255,0.08),rgba(91,124,255,0.04));border:1px solid rgba(124,92,255,0.18)">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center ring-pulse" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));color:white">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2 5.8L20 11l-5.8 2L12 19l-2.2-6L4 11l6.1-2.2z"/></svg>
+        </div>
+        <span class="chip" style="background:rgba(124,92,255,0.15);color:#c4b5fd;border-color:rgba(124,92,255,0.25)">AI Insight</span>
+        </div>
+        <button type="button" id="aiInsightRefreshBtn" class="btn-icon" data-tip="Refresh AI insight" aria-label="Refresh AI insight">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+        </button>
+      </div>
+      <p id="aiInsightHeadline" class="text-sm muted" th:text="${aiInsight.headline}">Analyzing your spending…</p>
+      <p class="text-xs dim mt-3" id="aiProviderStatus"
+         th:with="gemini=${aiProviderStatus != null and aiProviderStatus['gemini'] == 'active'},groq=${aiProviderStatus != null and aiProviderStatus['groq'] == 'active'}"
+         th:text="${gemini and groq} ? 'AI: Gemini 2.5 Flash + Groq · active' : (${gemini} ? 'AI: Gemini 2.5 Flash · active' : (${groq} ? 'AI: Groq · active' : 'AI: local heuristic (no key configured)'))">AI providers: checking...</p>
+    </div>
+
+    <div class="glass p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold" style="color:var(--text-0)">Budgets</h3>
+        <a th:href="@{/budgets}" class="link-accent text-sm">View all →</a>
+      </div>
+      <div class="space-y-4" id="budgetPreview">
+        <div th:each="b : ${budgetPreview}" th:remove="tag">
+          <div class="flex items-center justify-between text-sm mb-1.5">
+            <span style="color:var(--text-1)" th:text="${b.label}">Category</span>
+            <span class="muted"><span class="private" th:text="${b.spentFmt}">₹0</span> / <span th:text="${b.budgetFmt}">₹0</span></span>
+          </div>
+          <div class="progress"><div th:class="${b.level == 'danger' ? 'progress-fill danger' : (b.level == 'warn' ? 'progress-fill warn' : 'progress-fill')}" th:style="'width:' + ${b.pct} + '%'"></div></div>
+        </div>
+        <div th:if="${budgetPreview == null or #lists.isEmpty(budgetPreview)}" class="text-sm dim text-center py-4">
+          <a th:href="@{/budgets}" class="link-accent">Set up budgets →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent transactions -->
+  <div class="glass p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-semibold" style="color:var(--text-0)">Recent transactions</h3>
+        <p class="text-sm muted">Your last entries</p>
+      </div>
+      <a th:href="@{/expenses}" class="link-accent text-sm">See all →</a>
+    </div>
+
+    <div id="recentTxn">
+      <div th:each="t : ${recentTxns}" class="flex items-center gap-4 py-3" style="border-bottom:1px solid var(--border)">
+        <span class="cat-icon" th:classappend="' cat-' + ${t.category}" th:text="${t.icon}">🍽</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate" style="color:var(--text-0)" th:text="${t.title}">Transaction</div>
+          <div class="text-xs dim" th:text="${t.meta}">Date</div>
+        </div>
+        <div class="font-display text-base private"
+             th:text="${t.amountFmt}"
+             th:style="'color:' + ${t.amount < 0 ? 'var(--text-0)' : 'var(--success)'}">₹0</div>
+      </div>
+
+      <div th:if="${recentTxns == null or #lists.isEmpty(recentTxns)}" class="empty">
+        <div class="empty-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        <div style="color:var(--text-0);font-weight:500">No transactions yet</div>
+        <p class="text-sm dim">Add your first expense to see it here.</p>
+        <button type="button" class="btn btn-primary" data-modal-open="expenseModal">Add an expense</button>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<th:block th:fragment="scripts">
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    setChartDefaults();
+
+    // Real chart data from server — null if no expenses
+    const trendData = /*[[${trendChartData}]]*/ null;
+    const catData   = /*[[${categoryChartData}]]*/ null;
+
+    // Only render charts if there is actual data
+    if (trendData && trendData.hasData && document.getElementById('trendChart')) {
+      const trendCtx = document.getElementById('trendChart').getContext('2d');
+      const grad = trendCtx.createLinearGradient(0, 0, 0, 280);
+      grad.addColorStop(0, 'rgba(124,92,255,0.35)');
+      grad.addColorStop(1, 'rgba(124,92,255,0)');
+      new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: trendData.labels,
+          datasets: [{
+            label: 'Spending',
+            data: trendData.data,
+            borderColor: '#7c5cff',
+            backgroundColor: grad,
+            fill: true, tension: 0.4,
+            borderWidth: 2, pointRadius: 0, pointHoverRadius: 5,
+            pointBackgroundColor: '#7c5cff'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    if (catData && catData.hasData && document.getElementById('donutChart')) {
+      const palette = ['#f87171','#60a5fa','#f472b6','#fbbf24','#a78bfa','#34d399','#fb923c','#94a3b8'];
+      const labels = catData.labels;
+      const data   = catData.data;
+      const colors = labels.map((_, i) => palette[i % palette.length]);
+
+      new Chart(document.getElementById('donutChart'), {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{ data: data, backgroundColor: colors, borderWidth: 0, hoverOffset: 8 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false } } }
+      });
+
+      const legend = document.getElementById('catLegend');
+      if (legend) {
+        legend.innerHTML = labels.map((name, i) => `
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span style="width:8px;height:8px;border-radius:50%;background:${colors[i]};display:inline-block"></span>
+              <span style="color:var(--text-1)">${name}</span>
+            </div>
+            <span class="muted private">₹${Number(data[i]).toLocaleString('en-IN')}</span>
+          </div>
+        `).join('');
+      }
+    }
+    /*]]>*/
+  </script>
+</th:block>
+
+</body>
+</html>

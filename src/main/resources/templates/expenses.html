@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Expenses', 'expenses', 'Every rupee, every day')}">
+<body>
+
+<section th:fragment="content">
+
+  <div class="flex items-start justify-between mb-6 gap-4 flex-wrap fade-up">
+    <div>
+      <h1 class="section-title font-display" style="font-size:36px">
+        All <em style="font-style:italic;color:var(--accent)">expenses</em>
+      </h1>
+      <p class="section-sub">
+        <span th:text="${totalCount} ?: 142">142</span> transactions ·
+        <span class="private" th:text="${totalSpentFmt} ?: '24,380 INR'">₹24,380</span> this month
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <form th:action="@{/expenses/export}" method="get" style="display:inline">
+        <button type="submit" class="btn btn-soft btn-sm" style="padding:7px 12px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </form>
+      <button type="button" class="btn btn-primary btn-sm" data-modal-open="expenseModal" style="padding:7px 12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add expense
+      </button>
+    </div>
+  </div>
+
+  <div id="editData" hidden
+       th:if="${expenseForm != null and expenseForm.id != null}"
+       th:attr="data-id=${expenseForm.id},data-merchant=${expenseForm.merchant},data-amount=${expenseForm.amount},data-category=${expenseForm.category},data-date=${expenseForm.date},data-notes=${expenseForm.notes},data-tags=${expenseForm.tags}"></div>
+
+  <!-- Filters — GET form submits to /expenses with query params -->
+  <form th:action="@{/expenses}" method="get" class="glass p-4 mb-5 flex items-center gap-3 flex-wrap" id="filterForm">
+    <div class="search" style="flex:1;min-width:200px;max-width:320px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" name="q" id="searchInput" th:value="${filter != null ? filter.q : ''}" placeholder="Search merchant, tag, note…">
+    </div>
+
+    <div class="segmented" id="dateSeg">
+      <button type="button" th:classappend="${filter == null or filter.range == 'month'} ? ' active'" data-range="month">This month</button>
+      <button type="button" th:classappend="${filter != null and filter.range == 'week'} ? ' active'" data-range="week">Week</button>
+      <button type="button" th:classappend="${filter != null and filter.range == 'year'} ? ' active'" data-range="year">Year</button>
+      <button type="button" th:classappend="${filter != null and filter.range == 'custom'} ? ' active'" data-range="custom">Custom</button>
+    </div>
+    <input type="hidden" name="range" id="rangeInput" th:value="${filter != null ? filter.range : 'month'}" value="month"/>
+
+    <select class="btn btn-soft btn-sm" name="category" style="padding:7px 12px">
+      <option value="" th:selected="${filter == null or filter.category == null}">All categories</option>
+      <option th:each="c : ${categories}" th:value="${c.key}" th:text="${c.label}" th:selected="${filter != null and filter.category == c.key}">Food</option>
+      <option value="food"   th:if="${categories == null}">🍽 Food</option>
+      <option value="transport" th:if="${categories == null}">🚗 Transport</option>
+      <option value="shopping" th:if="${categories == null}">🛍 Shopping</option>
+      <option value="bills" th:if="${categories == null}">⚡ Bills</option>
+      <option value="entertainment" th:if="${categories == null}">🎬 Entertainment</option>
+      <option value="health" th:if="${categories == null}">❤️ Health</option>
+    </select>
+
+    <div class="flex gap-1">
+      <label class="text-xs dim flex items-center gap-1">Min
+        <input class="input" type="number" name="min" th:value="${filter != null ? filter.min : ''}" step="0.01" style="padding:6px 8px;width:80px">
+      </label>
+      <label class="text-xs dim flex items-center gap-1">Max
+        <input class="input" type="number" name="max" th:value="${filter != null ? filter.max : ''}" step="0.01" style="padding:6px 8px;width:80px">
+      </label>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-sm" style="padding:7px 12px">Apply</button>
+    <a th:href="@{/expenses}" class="btn btn-ghost btn-sm" style="padding:7px 12px">Clear</a>
+  </form>
+
+  <!-- Table -->
+  <div class="glass" id="expensesCard">
+    <div class="table-wrap">
+      <table class="table" id="expensesTable">
+        <thead>
+          <tr>
+            <th style="width:40px"><div class="checkbox" id="selectAllBox" role="checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></th>
+            <th><a th:href="@{/expenses(sort='merchant')}" class="link">Merchant</a></th>
+            <th><a th:href="@{/expenses(sort='category')}" class="link">Category</a></th>
+            <th><a th:href="@{/expenses(sort='date')}" class="link">Date</a></th>
+            <th>Tags</th>
+            <th style="text-align:right"><a th:href="@{/expenses(sort='amount')}" class="link">Amount</a></th>
+            <th style="width:40px"></th>
+          </tr>
+        </thead>
+        <tbody id="expenseTable">
+          <!-- Server rows -->
+          <tr th:each="e : ${expenses}" th:data-id="${e.id}">
+            <td><div class="checkbox row-check" role="checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></td>
+            <td>
+              <div class="flex items-center gap-3">
+                <span class="cat-icon" th:classappend="' cat-' + ${e.category}" th:text="${e.icon} ?: '💳'">🍽</span>
+                <div>
+                  <div class="text-sm font-medium" style="color:var(--text-0)" th:text="${e.merchant}">Swiggy</div>
+                  <div class="text-xs dim" th:text="${e.note}">Biryani + drinks</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="chip" th:classappend="' cat-' + ${e.category}" style="color:var(--c);background:var(--cb);border-color:var(--c)">
+                <span class="chip-dot" style="background:var(--c)"></span>
+                <span th:text="${e.categoryLabel}">Food</span>
+              </span>
+            </td>
+            <td class="muted text-sm" th:text="${e.dateFmt}">Apr 19</td>
+            <td>
+              <div class="flex gap-1 flex-wrap">
+                <span th:each="tag : ${e.tags}" class="chip text-[11px]" style="padding:2px 8px" th:text="'#' + ${tag}">#weekend</span>
+              </div>
+            </td>
+            <td style="text-align:right" class="font-display text-base private">
+              <span th:style="'color:' + (${e.amount < 0 ? 'var(--text-0)' : 'var(--success)'})" th:text="${e.amountFmt}">-₹420</span>
+            </td>
+            <td>
+              <div class="dropdown" data-dropdown>
+                <button type="button" class="btn-icon" style="width:30px;height:30px" data-dropdown-toggle aria-label="More">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </button>
+                <div class="dropdown-menu">
+                  <a th:href="@{/expenses/{id}/edit(id=${e.id})}" class="dropdown-item edit-expense-link" th:attr="data-edit-id=${e.id}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Edit
+                  </a>
+                  <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post" style="margin:0"
+                        class="js-expense-delete-form" th:attr="data-merchant=${e.merchant}">
+                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="dropdown-item w-full" style="color:#fca5a5;background:none;border:none;text-align:left;cursor:pointer;font:inherit">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Demo fallback (removed at runtime if server rows exist) -->
+          <tr th:if="${expenses == null or #lists.isEmpty(expenses)}" id="demoRows" th:remove="all-but-first"></tr>
+        </tbody>
+      </table>
+
+      <!-- Empty state -->
+      <div th:if="${expenses != null and #lists.isEmpty(expenses)}" class="empty">
+        <div class="empty-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div style="color:var(--text-0);font-weight:500">No expenses match those filters</div>
+        <p class="text-sm dim">Try broadening the date range or clearing filters.</p>
+        <a th:href="@{/expenses}" class="btn btn-soft">Clear filters</a>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between p-4" style="border-top:1px solid var(--border)">
+      <div class="text-sm muted">
+        Showing <span th:text="${page != null ? page.from : '1'}">1</span>–<span th:text="${page != null ? page.to : '8'}">8</span>
+        of <span th:text="${page != null ? page.total : '142'}">142</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <a th:href="@{/expenses(page=${page != null ? page.prev : 1})}" class="btn-icon" style="width:32px;height:32px"
+           th:classappend="${page != null and !page.hasPrev} ? ' opacity-40 pointer-events-none'">‹</a>
+        <span th:each="p : ${page != null ? page.numbers : {1,2,3}}" th:remove="tag">
+          <a th:href="@{/expenses(page=${p})}"
+             th:class="${page != null and page.current == p} ? 'btn btn-soft' : 'btn btn-ghost'"
+             th:text="${p + 1}" style="padding:5px 10px;min-width:32px;font-size:13px">1</a>
+        </span>
+          <a th:href="@{/expenses(page=${page != null ? page.next : 2})}" class="btn-icon" style="width:32px;height:32px"
+            th:classappend="${page != null and !page.hasNext} ? ' opacity-40 pointer-events-none'">›</a>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<th:block th:fragment="scripts">
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    // Wire segmented date control to hidden input
+    document.querySelectorAll('#dateSeg button').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('#dateSeg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('rangeInput').value = b.dataset.range;
+    }));
+
+    // Select-all
+    document.getElementById('selectAllBox')?.addEventListener('click', function () {
+      this.classList.toggle('checked');
+      const on = this.classList.contains('checked');
+      document.querySelectorAll('.row-check').forEach(c => c.classList.toggle('checked', on));
+    });
+    /*]]>*/
+  </script>
+</th:block>
+
+</body>
+</html>

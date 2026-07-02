@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>System Status — Ledger</title>
+    <meta name="description" content="Real-time system health and operational status for Ledger"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:          #0a0a0f;
+            --surface:     #111118;
+            --card:        #16161f;
+            --border:      rgba(255,255,255,0.07);
+            --text:        #e8e8f0;
+            --muted:       #888;
+            --green:       #22c55e;
+            --green-glow:  rgba(34,197,94,0.15);
+            --red:         #ef4444;
+            --red-glow:    rgba(239,68,68,0.15);
+            --yellow:      #f59e0b;
+            --yellow-glow: rgba(245,158,11,0.15);
+            --purple:      #8b5cf6;
+            --blue:        #3b82f6;
+            --accent:      #6366f1;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem 4rem;
+        }
+
+        /* ── HEADER ── */
+        .site-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 860px;
+            margin-bottom: 3rem;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            text-decoration: none;
+            color: var(--text);
+        }
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            font-size: .9rem;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(99,102,241,.4);
+        }
+        .logo-text { font-size: 1.1rem; font-weight: 600; letter-spacing: -.02em; }
+        .back-btn {
+            display: flex; align-items: center; gap: .5rem;
+            padding: .5rem 1rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .85rem;
+            transition: all .2s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.09); color: var(--text); }
+
+        /* ── HERO ── */
+        .hero { text-align: center; margin-bottom: 3rem; width: 100%; max-width: 860px; }
+        .overall-badge {
+            display: inline-flex; align-items: center; gap: .5rem;
+            padding: .45rem 1.2rem;
+            border-radius: 999px;
+            font-size: .8rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            margin-bottom: 1.2rem;
+            animation: pulse-badge 2.5s ease-in-out infinite;
+        }
+        .badge-ok  { background: var(--green-glow); border: 1px solid rgba(34,197,94,.35); color: var(--green); }
+        .badge-err { background: var(--red-glow);   border: 1px solid rgba(239,68,68,.35);  color: var(--red); }
+        .badge-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .badge-ok  .badge-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .badge-err .badge-dot { background: var(--red);   box-shadow: 0 0 8px var(--red); }
+
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: .75; }
+        }
+
+        .hero h1 {
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 700;
+            letter-spacing: -.03em;
+            margin-bottom: .6rem;
+        }
+        .hero p { color: var(--muted); font-size: .95rem; }
+
+        /* ── GRID ── */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            max-width: 860px;
+            margin-bottom: 1.5rem;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.4rem 1.6rem;
+            position: relative;
+            overflow: hidden;
+            transition: border-color .3s, transform .2s;
+        }
+        .card:hover { border-color: rgba(255,255,255,0.13); transform: translateY(-2px); }
+        .card::before {
+            content: ''; position: absolute; inset: 0; opacity: 0;
+            transition: opacity .3s;
+        }
+        .card.ok::before    { background: radial-gradient(circle at top left, var(--green-glow), transparent 60%); opacity: 1; }
+        .card.err::before   { background: radial-gradient(circle at top left, var(--red-glow),   transparent 60%); opacity: 1; }
+        .card.info::before  { background: radial-gradient(circle at top left, rgba(99,102,241,.08), transparent 60%); opacity: 1; }
+
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .card-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            display: grid; place-items: center; font-size: 1.1rem;
+        }
+        .icon-green  { background: var(--green-glow); }
+        .icon-red    { background: var(--red-glow); }
+        .icon-blue   { background: rgba(59,130,246,.15); }
+        .icon-purple { background: rgba(139,92,246,.15); }
+        .icon-yellow { background: var(--yellow-glow); }
+
+        .status-pill {
+            font-size: .72rem; font-weight: 600;
+            padding: .25rem .75rem;
+            border-radius: 999px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+        .pill-ok  { background: var(--green-glow); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+        .pill-err { background: var(--red-glow);   color: var(--red);   border: 1px solid rgba(239,68,68,.3); }
+        .pill-info{ background: rgba(99,102,241,.12); color: var(--accent); border: 1px solid rgba(99,102,241,.3); }
+
+        .card-title { font-size: .8rem; color: var(--muted); margin-bottom: .3rem; font-weight: 500; }
+        .card-value { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; }
+        .card-sub   { font-size: .8rem; color: var(--muted); margin-top: .25rem; }
+
+        /* ── PROGRESS BAR ── */
+        .progress-wrap { margin-top: .9rem; }
+        .progress-label { display: flex; justify-content: space-between; font-size: .78rem; color: var(--muted); margin-bottom: .4rem; }
+        .progress-bar {
+            height: 6px; border-radius: 999px;
+            background: rgba(255,255,255,.06);
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; border-radius: 999px;
+            transition: width .8s ease;
+        }
+        .fill-green  { background: linear-gradient(90deg, var(--green), #16a34a); }
+        .fill-yellow { background: linear-gradient(90deg, var(--yellow), #d97706); }
+        .fill-red    { background: linear-gradient(90deg, var(--red), #dc2626); }
+
+        /* ── WIDE CARD ── */
+        .card-wide { grid-column: 1 / -1; }
+        .services-list { display: flex; flex-direction: column; gap: .75rem; margin-top: .5rem; }
+        .service-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: .75rem 1rem;
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+        .service-left { display: flex; align-items: center; gap: .9rem; }
+        .service-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .dot-green  { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .dot-red    { background: var(--red);   box-shadow: 0 0 8px var(--red); }
+        .dot-yellow { background: var(--yellow);box-shadow: 0 0 8px var(--yellow); }
+        .service-name { font-size: .9rem; font-weight: 500; }
+        .service-desc { font-size: .78rem; color: var(--muted); margin-top: .1rem; }
+        .service-status { font-size: .82rem; color: var(--muted); }
+
+        /* ── FOOTER ── */
+        .footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--muted);
+            font-size: .8rem;
+            width: 100%;
+            max-width: 860px;
+        }
+        .footer a { color: var(--accent); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        .last-checked { margin-top: .4rem; font-size: .75rem; opacity: .6; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+            .card-wide { grid-column: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="site-header">
+    <a href="/" class="logo">
+        <div class="logo-icon">L</div>
+        <span class="logo-text">Ledger.</span>
+    </a>
+    <a href="/dashboard" class="back-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back to Dashboard
+    </a>
+</header>
+
+<!-- ── HERO ── -->
+<section class="hero">
+    <div id="overall-badge" th:class="${overallOk} ? 'overall-badge badge-ok' : 'overall-badge badge-err'">
+        <div class="badge-dot"></div>
+        <span id="overall-text" th:text="${overallOk} ? 'All Systems Operational' : 'System Degraded'">All Systems Operational</span>
+    </div>
+    <h1>System Status</h1>
+    <p>Live health overview — auto-updating every 3 seconds.</p>
+</section>
+
+<!-- ── CARDS ── -->
+<div class="grid">
+
+    <!-- Database -->
+    <div id="card-db" th:class="${dbOk} ? 'card ok' : 'card err'">
+        <div class="card-header">
+            <div id="card-db-icon" th:class="${dbOk} ? 'card-icon icon-green' : 'card-icon icon-red'">🗄️</div>
+            <span id="card-db-pill" th:class="${dbOk} ? 'status-pill pill-ok' : 'status-pill pill-err'"
+                  th:text="${dbOk} ? 'Operational' : 'Outage'">Operational</span>
+        </div>
+        <div class="card-title">Database</div>
+        <div id="card-db-msg" class="card-value" style="font-size:1.1rem;"
+             th:text="${dbMessage}">Connected</div>
+        <div class="card-sub">H2 · <span id="card-db-users" th:text="${userCount}">0</span> registered user(s)</div>
+    </div>
+
+    <!-- Memory -->
+    <div id="card-mem" th:class="${memPercent < 80} ? 'card ok' : 'card err'">
+        <div class="card-header">
+            <div id="card-mem-icon" th:class="${memPercent < 80} ? 'card-icon icon-green' : 'card-icon icon-red'">💾</div>
+            <span id="card-mem-pill" th:class="${memPercent < 80} ? 'status-pill pill-ok' : 'status-pill pill-err'"
+                  th:text="${memPercent < 80} ? 'Healthy' : 'High'">Healthy</span>
+        </div>
+        <div class="card-title">Heap Memory</div>
+        <div class="card-value"><span id="card-mem-used" th:text="${usedMb}">0</span> MB</div>
+        <div class="card-sub">of <span id="card-mem-max" th:text="${maxMb}">0</span> MB allocated</div>
+        <div class="progress-wrap">
+            <div class="progress-label">
+                <span>Usage</span>
+                <span><span id="card-mem-percent" th:text="${memPercent}">0</span>%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="card-mem-fill" class="progress-fill"
+                     th:classappend="${memPercent >= 80} ? 'fill-red' : (${memPercent} >= 60 ? 'fill-yellow' : 'fill-green')"
+                     th:style="'width:' + ${memPercent} + '%'"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JVM Uptime -->
+    <div class="card info">
+        <div class="card-header">
+            <div class="card-icon icon-purple">⏱️</div>
+            <span class="status-pill pill-info">Running</span>
+        </div>
+        <div class="card-title">JVM Uptime</div>
+        <div id="card-uptime" class="card-value" style="font-size:1.3rem;" th:text="${uptime}">0h 00m 00s</div>
+        <div class="card-sub">Java <span id="card-java" th:text="${javaVersion}">unknown</span></div>
+    </div>
+
+    <!-- Services List -->
+    <div class="card info card-wide">
+        <div class="card-header">
+            <div class="card-icon icon-blue">🔧</div>
+            <span class="status-pill pill-info">Details</span>
+        </div>
+        <div class="card-title" style="margin-bottom:.2rem;">Service Components</div>
+        <div class="services-list">
+
+            <div class="service-row">
+                <div class="service-left">
+                    <div id="svc-db-dot" th:class="${dbOk} ? 'service-dot dot-green' : 'service-dot dot-red'"></div>
+                    <div>
+                        <div class="service-name">Database (H2)</div>
+                        <div id="svc-db-desc" class="service-desc" th:text="${dbMessage}">Connected</div>
+                    </div>
+                </div>
+                <div id="svc-db-status" class="service-status" th:text="${dbOk} ? 'Online' : 'Offline'">Online</div>
+            </div>
+
+            <div class="service-row">
+                <div class="service-left">
+                    <div class="service-dot dot-green"></div>
+                    <div>
+                        <div class="service-name">Authentication</div>
+                        <div class="service-desc">Spring Security · Form login · 2FA support</div>
+                    </div>
+                </div>
+                <div class="service-status">Online</div>
+            </div>
+
+            <div class="service-row">
+                <div class="service-left">
+                    <div class="service-dot dot-green"></div>
+                    <div>
+                        <div class="service-name">Web Application</div>
+                        <div class="service-desc">Spring Boot · Thymeleaf · localhost:8080</div>
+                    </div>
+                </div>
+                <div class="service-status">Online</div>
+            </div>
+
+            <div class="service-row">
+                <div class="service-left">
+                    <div class="service-dot dot-yellow"></div>
+                    <div>
+                        <div class="service-name">Email / Notifications</div>
+                        <div class="service-desc">SMTP (not configured in dev mode)</div>
+                    </div>
+                </div>
+                <div class="service-status">Limited</div>
+            </div>
+
+            <div class="service-row">
+                <div class="service-left">
+                    <div id="svc-ai-dot" class="service-dot dot-yellow"></div>
+                    <div>
+                        <div class="service-name">AI Insights</div>
+                        <div id="svc-ai-desc" class="service-desc">Gemini 2.5 Flash → Groq (with local fallback)</div>
+                    </div>
+                </div>
+                <div id="svc-ai-status" class="service-status">Checking…</div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+    <div>Need help? Email us at <a href="mailto:help@ledger.app">help@ledger.app</a></div>
+    <div class="last-checked">Last checked: <span id="last-checked" th:text="${timestamp}">—</span> · <span id="sse-state">connecting…</span></div>
+</footer>
+
+<script>
+(function() {
+   var $ = function(id) { return document.getElementById(id); };
+   var stateEl = $('sse-state');
+
+   function setText(id, v) { var el = $(id); if (el && v != null) el.textContent = String(v); }
+   function setClass(id, cls) { var el = $(id); if (el) el.className = cls; }
+   function pillFor(active) { return active ? 'service-dot dot-green' : 'service-dot dot-yellow'; }
+
+   function applySnapshot(s) {
+      // Overall
+      var okBadge = s.overallOk;
+      setClass('overall-badge', okBadge ? 'overall-badge badge-ok' : 'overall-badge badge-err');
+      setText('overall-text', okBadge ? 'All Systems Operational' : 'System Degraded');
+
+      // Database card
+      setClass('card-db', s.dbOk ? 'card ok' : 'card err');
+      setClass('card-db-icon', s.dbOk ? 'card-icon icon-green' : 'card-icon icon-red');
+      setClass('card-db-pill', s.dbOk ? 'status-pill pill-ok' : 'status-pill pill-err');
+      setText('card-db-pill', s.dbOk ? 'Operational' : 'Outage');
+      setText('card-db-msg', s.dbMessage);
+      setText('card-db-users', s.userCount);
+
+      // Memory card
+      var memOk = s.memPercent < 80;
+      var memClass = s.memPercent >= 80 ? 'fill-red' : (s.memPercent >= 60 ? 'fill-yellow' : 'fill-green');
+      setClass('card-mem', memOk ? 'card ok' : 'card err');
+      setClass('card-mem-icon', memOk ? 'card-icon icon-green' : 'card-icon icon-red');
+      setClass('card-mem-pill', memOk ? 'status-pill pill-ok' : 'status-pill pill-err');
+      setText('card-mem-pill', memOk ? 'Healthy' : 'High');
+      setText('card-mem-used', s.usedMb);
+      setText('card-mem-max', s.maxMb);
+      setText('card-mem-percent', s.memPercent);
+      var fill = $('card-mem-fill');
+      if (fill) {
+         fill.className = 'progress-fill ' + memClass;
+         fill.style.width = s.memPercent + '%';
+      }
+
+      // Uptime + java
+      setText('card-uptime', s.uptime);
+      setText('card-java', s.javaVersion);
+
+      // Services
+      setClass('svc-db-dot', s.dbOk ? 'service-dot dot-green' : 'service-dot dot-red');
+      setText('svc-db-desc', s.dbMessage);
+      setText('svc-db-status', s.dbOk ? 'Online' : 'Offline');
+
+      // AI providers
+      var ai = s.ai || {};
+      var active = [];
+      ['gemini','groq'].forEach(function(p) { if (ai[p] === 'active') active.push(p); });
+      var anyAi = active.length > 0;
+      setClass('svc-ai-dot', anyAi ? 'service-dot dot-green' : 'service-dot dot-yellow');
+      setText('svc-ai-status', anyAi ? 'Online' : 'Fallback');
+      setText('svc-ai-desc', anyAi
+         ? ('Active: ' + active.map(function(p){ return p === 'gemini' ? 'Gemini 2.5 Flash' : 'Groq'; }).join(' + '))
+         : 'No API key configured · using local heuristic');
+
+      setText('last-checked', s.timestamp);
+   }
+
+   function connect() {
+      try {
+         var es = new EventSource('/sse/status');
+         es.addEventListener('status', function(ev) {
+            stateEl.textContent = 'live';
+            try { applySnapshot(JSON.parse(ev.data)); } catch (_) {}
+         });
+         es.onerror = function() {
+            stateEl.textContent = 'reconnecting…';
+            es.close();
+            setTimeout(connect, 4000);
+         };
+      } catch (e) {
+         stateEl.textContent = 'offline';
+      }
+   }
+   connect();
+})();
+</script>
+
+</body>
+</html>

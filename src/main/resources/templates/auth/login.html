@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" data-theme="dark">
+<head th:replace="~{fragments/fragments :: head('Sign in')}"></head>
+<body>
+
+<div class="noise"></div>
+<div class="auth-split">
+
+  <!-- Left: form -->
+  <div class="flex flex-col justify-between p-8 md:p-12" style="position:relative;z-index:2">
+    <a th:href="@{/}" class="flex items-center gap-2 w-fit" style="text-decoration:none">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,var(--accent),var(--accent-2))">
+        <span class="font-display text-lg" style="color:white">L</span>
+      </div>
+      <span class="font-semibold" style="color:var(--text-0)">Ledger<span style="color:var(--accent)">.</span></span>
+    </a>
+
+    <div class="w-full max-w-sm mx-auto py-12">
+      <!-- Top tabs -->
+      <div class="segmented mb-8" style="width:100%">
+        <button type="button" class="active flex-1" onclick="location.href='/login'">Sign in</button>
+        <button type="button" class="flex-1" onclick="location.href='/signup'">Create account</button>
+      </div>
+
+      <h1 class="font-display text-4xl mb-2" style="color:var(--text-0);letter-spacing:-0.03em">Welcome back.</h1>
+      <p class="muted mb-8">Good to see you again. Let's get you into your money.</p>
+
+      <!-- Flash / error messages -->
+      <div th:if="${param.error}" class="toast error mb-5" role="alert">Invalid email or password.</div>
+      <div th:if="${param.locked}" class="toast error mb-5" role="alert">Too many attempts. Please wait and try again.</div>
+      <div th:if="${param.logout}" class="toast success mb-5" role="status">You've been signed out.</div>
+      <div th:if="${flashError}" class="toast error mb-5" role="alert" th:text="${flashError}">Error</div>
+      <div th:if="${flashSuccess}" class="toast success mb-5" role="status" th:text="${flashSuccess}">OK</div>
+
+      <div class="flex items-center gap-3 mb-5 text-xs dim">
+        <div class="flex-1" style="height:1px;background:var(--border)"></div><span>Sign in with email</span><div class="flex-1" style="height:1px;background:var(--border)"></div>
+      </div>
+
+      <!-- Login form — posts to Spring Security default /login -->
+      <form th:action="@{/login}" method="post" id="loginForm" autocomplete="on">
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <div class="mb-4">
+          <label class="label" for="email">Email</label>
+          <input class="input" type="email" id="email" name="username" placeholder="you@example.com" required autocomplete="username" autofocus/>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <label class="label" for="password" style="margin:0">Password</label>
+          </div>
+          <div style="position:relative">
+            <input class="input" type="password" id="password" name="password" placeholder="••••••••••" required autocomplete="current-password" style="padding-right:42px"/>
+            <button type="button" onclick="togglePw('password')" aria-label="Show password"
+                    style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-3);padding:6px;cursor:pointer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2 mb-5 text-sm cursor-pointer" style="color:var(--text-1)">
+          <input type="checkbox" name="remember-me" value="true" style="width:16px;height:16px;accent-color:var(--accent)"/>
+          Keep me signed in for 30 days
+        </label>
+
+        <button type="submit" class="btn btn-primary w-full">Sign in to Ledger</button>
+      </form>
+
+      <p class="text-sm muted mt-6 text-center">
+        Don't have an account? <a th:href="@{/signup}" class="link-accent">Create one</a>
+      </p>
+    </div>
+
+    <div class="text-xs dim">© 2026 Ledger · Made with care in Chennai</div>
+  </div>
+
+  <!-- Right: visual -->
+  <div class="auth-visual flex items-center justify-center p-12">
+    <div class="relative z-10 max-w-md">
+      <div class="chip chip-info mb-6"><span class="chip-dot" style="background:#a5b4fc"></span>v2.4 · with AI insights</div>
+      <h2 class="font-display text-5xl mb-5" style="color:var(--text-0);letter-spacing:-0.03em;line-height:1.05">
+        Understand where your money <em style="font-style:italic;color:var(--accent)">actually</em> goes.
+      </h2>
+      <p class="text-base muted mb-8">Ledger quietly tracks every rupee, then shows you the story. No judgment. No spam. No selling your data.</p>
+
+      <div class="glass mt-10 p-5" style="transform:rotate(-1.5deg)">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs dim uppercase tracking-wider">This week</span>
+          <span class="chip chip-success text-[11px]">-18%</span>
+        </div>
+        <div class="font-display text-3xl mb-2" style="color:var(--text-0)">₹4,820</div>
+        <div class="flex items-end gap-1 h-12">
+          <div style="flex:1;background:var(--accent);opacity:0.3;border-radius:3px;height:40%"></div>
+          <div style="flex:1;background:var(--accent);opacity:0.5;border-radius:3px;height:60%"></div>
+          <div style="flex:1;background:var(--accent);opacity:0.4;border-radius:3px;height:45%"></div>
+          <div style="flex:1;background:var(--accent);opacity:0.7;border-radius:3px;height:75%"></div>
+          <div style="flex:1;background:var(--accent);opacity:0.9;border-radius:3px;height:95%"></div>
+          <div style="flex:1;background:var(--accent);opacity:0.5;border-radius:3px;height:55%"></div>
+          <div style="flex:1;background:var(--accent);opacity:0.6;border-radius:3px;height:65%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-host" id="toastHost"></div>
+<script th:src="@{/js/app.js}" src="/js/app.js"></script>
+<script>
+  function togglePw(id) {
+    const i = document.getElementById(id);
+    i.type = i.type === 'password' ? 'text' : 'password';
+  }
+</script>
+</body>
+</html>

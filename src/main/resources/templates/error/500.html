@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" data-theme="dark">
+<head th:replace="~{fragments/fragments :: head('Something broke')}"></head>
+<body>
+
+<div class="noise"></div>
+
+<!-- Ambient glow (warmer, for errors) -->
+<div aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden">
+  <div style="position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(248,113,113,0.14) 0%,transparent 60%);filter:blur(40px)"></div>
+</div>
+
+<main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:2">
+  <div class="text-center max-w-lg">
+
+    <a th:href="@{/}" class="inline-flex items-center gap-2 mb-12" style="text-decoration:none">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,var(--accent),var(--accent-2))">
+        <span class="font-display text-lg" style="color:white">L</span>
+      </div>
+      <span class="font-semibold" style="color:var(--text-0)">Ledger<span style="color:var(--accent)">.</span></span>
+    </a>
+
+    <div class="font-display mb-4" style="font-size:160px;line-height:1;letter-spacing:-0.04em;background:linear-gradient(135deg,#fca5a5 0%,#f87171 50%,#ef4444 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">500</div>
+
+    <h1 class="font-display text-4xl mb-3" style="color:var(--text-0);letter-spacing:-0.03em">Something broke on our end.</h1>
+
+    <p class="muted mb-8" style="max-width:440px;margin-left:auto;margin-right:auto">
+      Not your fault. A server stumbled, and we're already looking into it. Try again in a moment.
+    </p>
+
+    <!-- Optional: show the Spring error context -->
+    <div th:if="${error != null or message != null}" class="glass p-3 mb-6 inline-flex items-center gap-2 text-xs" style="color:var(--text-2);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;max-width:100%">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span th:text="${message} ?: ${error}">Internal Server Error</span>
+      <span th:if="${status}" class="chip chip-danger text-[10px]" style="padding:1px 6px" th:text="${status}">500</span>
+    </div>
+
+    <div class="flex gap-3 justify-center flex-wrap">
+      <button type="button" onclick="location.reload()" class="btn btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Try again
+      </button>
+      <a th:href="@{/dashboard}" class="btn btn-soft">Go to dashboard</a>
+      <a th:href="@{/status}" class="btn btn-ghost">Check status page</a>
+    </div>
+
+    <p class="text-xs dim mt-12">
+      If this keeps happening, email us at <a href="mailto:help@ledger.app" class="link-accent">help@ledger.app</a>
+      <span th:if="${timestamp}"> · <span th:text="${timestamp}">2026-04-20 01:50</span></span>
+    </p>
+  </div>
+</main>
+
+</body>
+</html>

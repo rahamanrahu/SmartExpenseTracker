@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout('Settings', 'settings', 'Tune Ledger to fit you')}">
+<body>
+
+<section th:fragment="content">
+
+  <div class="mb-6 fade-up">
+    <h1 class="section-title font-display" style="font-size:36px">Settings</h1>
+    <p class="section-sub">Make Ledger feel like yours.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+    <aside class="lg:col-span-1">
+      <nav class="glass p-2 flex lg:flex-col gap-1 overflow-x-auto" id="settingsNav">
+        <button type="button" class="nav-item active" data-panel="profile" style="padding:9px 12px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Profile</span>
+        </button>
+        <button type="button" class="nav-item" data-panel="preferences" style="padding:9px 12px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>
+          <span>Preferences</span>
+        </button>
+        <button type="button" class="nav-item" data-panel="notifications" style="padding:9px 12px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span>Notifications</span>
+        </button>
+        <button type="button" class="nav-item" data-panel="security" style="padding:9px 12px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <span>Security</span>
+        </button>
+        <button type="button" class="nav-item" data-panel="data" style="padding:9px 12px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <span>Data &amp; Export</span>
+        </button>
+        <button type="button" class="nav-item" data-panel="billing" style="padding:9px 12px" id="billingNav">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          <span>Billing</span>
+        </button>
+      </nav>
+    </aside>
+
+    <div class="lg:col-span-3">
+
+      <!-- PROFILE -->
+      <div class="settings-panel" data-panel="profile">
+        <form th:action="@{/settings/profile}" method="post" th:object="${profileForm}" class="glass p-6 mb-5">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <h2 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Profile</h2>
+          <p class="text-sm muted mb-6">How you show up across Ledger.</p>
+
+          <div class="flex items-center gap-5 mb-6 pb-6" style="border-bottom:1px solid var(--border)">
+            <div class="avatar" style="width:72px;height:72px;font-size:26px" th:text="${user != null ? user.initials : 'SD'}">SD</div>
+            <div>
+              <div class="font-medium mb-1" style="color:var(--text-0)" th:text="${user != null ? user.name : 'Superduash'}">Superduash</div>
+              <div class="text-xs muted mb-3">JPG, PNG or GIF · max 2MB</div>
+              <div class="flex gap-2">
+                <label class="btn btn-soft btn-sm" style="padding:6px 10px;cursor:pointer">
+                  Upload new
+                  <input type="file" name="avatar" accept="image/*" style="display:none" onchange="this.form && toast('info','Avatar selected')"/>
+                </label>
+                <button type="button" class="btn btn-ghost btn-sm" style="padding:6px 10px">Remove</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="label" for="displayName">Display name</label>
+              <input class="input" type="text" id="displayName" name="displayName" th:field="*{displayName}" required/>
+            </div>
+            <div>
+              <label class="label" for="username">Username</label>
+              <input class="input" type="text" id="username" name="username" th:field="*{username}"/>
+            </div>
+            <div class="md:col-span-2">
+              <label class="label" for="email">Email</label>
+              <input class="input" type="email" id="email" name="email" th:field="*{email}" required/>
+            </div>
+            <div>
+              <label class="label" for="phone">Phone</label>
+              <input class="input" type="tel" id="phone" name="phone" th:field="*{phone}" placeholder="+91 …"/>
+            </div>
+            <div>
+              <label class="label" for="timezone">Timezone</label>
+              <select class="input" id="timezone" name="timezone" th:field="*{timezone}">
+                <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="Europe/London">Europe/London</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="reset" class="btn btn-ghost">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- PREFERENCES -->
+      <div class="settings-panel" data-panel="preferences" style="display:none">
+        <form th:action="@{/settings/preferences}" method="post" th:object="${preferencesForm}" class="glass p-6 mb-5">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+          <h2 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Appearance</h2>
+          <p class="text-sm muted mb-5">How Ledger looks to you.</p>
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium" style="color:var(--text-0)">Theme</div>
+                <div class="text-xs muted">Dark · Light · System</div>
+              </div>
+              <div class="segmented" id="themeSeg" role="radiogroup">
+                <input type="hidden" name="theme" id="themeInput" th:value="${preferencesForm != null ? preferencesForm.theme : 'dark'}" value="dark"/>
+                <button type="button" data-val="dark" class="active">Dark</button>
+                <button type="button" data-val="light">Light</button>
+                <button type="button" data-val="auto">Auto</button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-4" style="border-top:1px solid var(--border)">
+              <div>
+                <div class="font-medium" style="color:var(--text-0)">Reduce motion</div>
+                <div class="text-xs muted">Less animation, more stillness</div>
+              </div>
+              <label class="switch"><input type="checkbox" name="reduceMotion" value="true" th:field="*{reduceMotion}"><span class="switch-slider"></span></label>
+            </div>
+            <div class="flex items-center justify-between pt-4" style="border-top:1px solid var(--border)">
+              <div>
+                <div class="font-medium" style="color:var(--text-0)">High contrast</div>
+                <div class="text-xs muted">Accessibility boost</div>
+              </div>
+              <label class="switch"><input type="checkbox" name="highContrast" value="true" th:field="*{highContrast}"><span class="switch-slider"></span></label>
+            </div>
+          </div>
+
+          <h2 class="text-lg font-semibold mb-1 mt-8 pt-6" style="color:var(--text-0);border-top:1px solid var(--border)">Regional</h2>
+          <p class="text-sm muted mb-5">Currency, language, and formats.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="label" for="currency">Default currency</label>
+              <select class="input" id="currency" name="currency" th:field="*{currency}">
+                <option value="INR">₹ INR — Indian Rupee</option>
+                <option value="USD">$ USD — US Dollar</option>
+                <option value="EUR">€ EUR — Euro</option>
+                <option value="GBP">£ GBP — Pound</option>
+                <option value="JPY">¥ JPY — Yen</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="language">Language</label>
+              <select class="input" id="language" name="language" th:field="*{language}">
+                <option value="en-IN">English (India)</option>
+                <option value="en-US">English (US)</option>
+                <option value="ta-IN">தமிழ்</option>
+                <option value="hi-IN">हिन्दी</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="firstDay">First day of week</label>
+              <select class="input" id="firstDay" name="firstDayOfWeek" th:field="*{firstDayOfWeek}">
+                <option value="MONDAY">Monday</option>
+                <option value="SUNDAY">Sunday</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="dateFormat">Date format</label>
+              <select class="input" id="dateFormat" name="dateFormat" th:field="*{dateFormat}">
+                <option value="dd/MM/yyyy">DD/MM/YYYY</option>
+                <option value="MM/dd/yyyy">MM/DD/YYYY</option>
+                <option value="yyyy-MM-dd">YYYY-MM-DD</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="submit" class="btn btn-primary">Save preferences</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="settings-panel" data-panel="notifications" style="display:none">
+        <form th:action="@{/settings/notifications}" method="post" th:object="${notificationsForm}" class="glass p-6">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <h2 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Notifications</h2>
+          <p class="text-sm muted mb-5">We only buzz when it matters.</p>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium" style="color:var(--text-0)">Budget alerts</div>
+                <div class="text-xs muted">When a category hits 80% and 100%</div>
+              </div>
+              <label class="switch"><input type="checkbox" name="budgetAlerts" value="true" th:field="*{budgetAlerts}"><span class="switch-slider"></span></label>
+            </div>
+            <div class="flex items-center justify-between pt-4" style="border-top:1px solid var(--border)">
+              <div>
+                <div class="font-medium" style="color:var(--text-0)">Weekly digest</div>
+                <div class="text-xs muted">A friendly Sunday recap</div>
+              </div>
+              <label class="switch"><input type="checkbox" name="weeklyDigest" value="true" th:field="*{weeklyDigest}"><span class="switch-slider"></span></label>
+            </div>
+            <div class="flex items-center justify-between pt-4" style="border-top:1px solid var(--border)">
+              <div>
+                <div class="font-medium" style="color:var(--text-0)">AI insights</div>
+                <div class="text-xs muted">Surprising patterns, when we notice them</div>
+              </div>
+              <label class="switch"><input type="checkbox" name="aiInsights" value="true" th:field="*{aiInsights}"><span class="switch-slider"></span></label>
+            </div>
+            <div class="flex items-center justify-between pt-4" style="border-top:1px solid var(--border)">
+              <div>
+                <div class="font-medium" style="color:var(--text-0)">Marketing emails</div>
+                <div class="text-xs muted">Rare product updates only</div>
+              </div>
+              <label class="switch"><input type="checkbox" name="marketing" value="true" th:field="*{marketing}"><span class="switch-slider"></span></label>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- SECURITY -->
+      <div class="settings-panel" data-panel="security" style="display:none">
+        <form th:action="@{/settings/password}" method="post" th:object="${passwordForm}" class="glass p-6 mb-5">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <h2 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Password</h2>
+          <p class="text-sm muted mb-5">Choose something only you know.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="label" for="currentPassword">Current password</label>
+              <input class="input" type="password" id="currentPassword" name="currentPassword" th:field="*{currentPassword}" required autocomplete="current-password"/>
+            </div>
+            <div>
+              <label class="label" for="newPassword">New password</label>
+              <input class="input" type="password" id="newPassword" name="newPassword" th:field="*{newPassword}" required minlength="8" autocomplete="new-password"/>
+            </div>
+            <div>
+              <label class="label" for="confirmPassword">Confirm new</label>
+              <input class="input" type="password" id="confirmPassword" name="confirmPassword" th:field="*{confirmPassword}" required autocomplete="new-password"/>
+            </div>
+          </div>
+          <div class="flex justify-end mt-5">
+            <button type="submit" class="btn btn-primary">Update password</button>
+          </div>
+        </form>
+
+        <div class="glass p-6 mb-5">
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-lg font-semibold" style="color:var(--text-0)">Two-factor authentication</h2>
+            <span class="chip" th:classappend="${user != null and user.twoFactorEnabled} ? ' chip-success' : ' chip-warn'"
+                  th:text="${user != null and user.twoFactorEnabled} ? 'Active' : 'Off'">Active</span>
+          </div>
+          <p class="text-sm muted mb-5">Use your authenticator app to secure every login.</p>
+
+          <div th:if="${twoFactorSetupPending}" class="glass p-4 mb-4" style="border-color:var(--accent-ghost)">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <div class="text-center">
+                <img th:if="${twoFactorQrCode}" th:src="${twoFactorQrCode}" alt="2FA QR code"
+                     style="width:220px;height:220px;border-radius:12px;background:white;padding:10px;display:inline-block"/>
+              </div>
+              <div>
+                <div class="font-medium mb-2" style="color:var(--text-0)">Scan this QR in Google Authenticator/Authy</div>
+                <div class="text-xs muted mb-3">If scanning fails, enter this key manually:</div>
+                <code class="chip" style="user-select:all" th:text="${twoFactorManualSecret}">ABCDEF123456</code>
+                <form th:action="@{/settings/2fa/verify}" method="post" th:object="${twoFactorForm}" class="mt-4">
+                  <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <label class="label" for="twoFactorCode">Verification code</label>
+                  <div class="flex gap-2">
+                    <input class="input" type="text" id="twoFactorCode" name="code" th:field="*{code}" required
+                           inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456"/>
+                    <button type="submit" class="btn btn-primary">Verify</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 flex-wrap">
+            <form th:action="@{/settings/2fa/toggle}" method="post" style="margin:0">
+              <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="btn btn-ghost" th:text="${user != null and user.twoFactorEnabled} ? 'Disable 2FA' : 'Start 2FA setup'">Start 2FA setup</button>
+            </form>
+            <form th:if="${twoFactorSetupPending}" th:action="@{/settings/2fa/regenerate}" method="post" style="margin:0">
+              <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+              <button type="submit" class="btn btn-soft">Generate new secret</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="glass p-6" style="border-color:rgba(248,113,113,0.25)">
+          <h2 class="text-lg font-semibold mb-1" style="color:#fca5a5">Danger zone</h2>
+          <p class="text-sm muted mb-5">These actions can't be undone.</p>
+          <form th:action="@{/settings/account/delete}" method="post" onsubmit="return confirm('Permanently delete your account? This cannot be undone.')">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium" style="color:var(--text-0)">Export &amp; delete account</div>
+                <div class="text-xs muted">Take your data, then close the door</div>
+              </div>
+              <button type="submit" class="btn btn-danger">Delete account</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- DATA & EXPORT -->
+      <div class="settings-panel" data-panel="data" style="display:none">
+        <div class="glass p-6 mb-5">
+          <h2 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Export your data</h2>
+          <p class="text-sm muted mb-5">Your money, your data. Always.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <a th:href="@{/data/export(format='csv')}" class="btn btn-soft" style="flex-direction:column;padding:20px;height:auto;gap:6px;text-decoration:none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div class="font-medium" style="color:var(--text-0)">CSV</div>
+              <div class="text-xs dim">For spreadsheets</div>
+            </a>
+            <a th:href="@{/data/export(format='json')}" class="btn btn-soft" style="flex-direction:column;padding:20px;height:auto;gap:6px;text-decoration:none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div class="font-medium" style="color:var(--text-0)">JSON</div>
+              <div class="text-xs dim">For developers</div>
+            </a>
+            <a th:href="@{/data/export(format='pdf')}" class="btn btn-soft" style="flex-direction:column;padding:20px;height:auto;gap:6px;text-decoration:none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div class="font-medium" style="color:var(--text-0)">PDF report</div>
+              <div class="text-xs dim">For humans</div>
+            </a>
+          </div>
+        </div>
+
+        <form th:action="@{/data/import}" method="post" enctype="multipart/form-data" class="glass p-6">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <h2 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Import from another app</h2>
+          <p class="text-sm muted mb-5">Bring your history with you.</p>
+          <label class="block mb-4">
+            <input type="file" name="file" accept=".csv,.ofx,.qif,.json" class="input" required/>
+          </label>
+          <div class="flex gap-2 flex-wrap">
+            <button type="submit" name="source" value="walnut" class="btn btn-soft">From Walnut</button>
+            <button type="submit" name="source" value="money-manager" class="btn btn-soft">From Money Manager</button>
+            <button type="submit" name="source" value="csv" class="btn btn-soft">Generic CSV</button>
+            <button type="submit" name="source" value="bank" class="btn btn-soft">Bank statement</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- BILLING -->
+      <div class="settings-panel" data-panel="billing" style="display:none" id="billing">
+        <div class="glass p-6">
+          <h2 class="text-lg font-semibold mb-1" style="color:var(--text-0)">Your plan</h2>
+          <p class="text-sm muted mb-5">
+            You're on the <span th:text="${plan != null ? plan.name : 'Free'}" style="color:var(--accent);font-weight:500">Free</span> plan.
+          </p>
+          <a th:href="@{/billing/upgrade}" class="btn btn-primary">Upgrade to Pro — ₹199/month</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+<th:block th:fragment="scripts">
+  <script>
+    const panelByHash = {
+      '#profile': 'profile',
+      '#preferences': 'preferences',
+      '#notifications': 'notifications',
+      '#security': 'security',
+      '#data': 'data',
+      '#billing': 'billing'
+    };
+
+    function activateSettingsPanel(panel) {
+      document.querySelectorAll('#settingsNav button').forEach(x => x.classList.remove('active'));
+      const navBtn = document.querySelector(`#settingsNav button[data-panel="${panel}"]`);
+      if (navBtn) navBtn.classList.add('active');
+      document.querySelectorAll('.settings-panel').forEach(x => x.style.display = x.dataset.panel === panel ? 'block' : 'none');
+    }
+
+    // Panel switcher
+    document.querySelectorAll('#settingsNav button').forEach(b => b.addEventListener('click', () => {
+      const p = b.dataset.panel;
+      activateSettingsPanel(p);
+      history.replaceState(null, '', '#' + p);
+    }));
+
+    // Deep-link to current section hash
+    if (panelByHash[location.hash]) {
+      activateSettingsPanel(panelByHash[location.hash]);
+    }
+
+    // Theme segmented
+    document.querySelectorAll('#themeSeg button').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('#themeSeg button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('themeInput').value = b.dataset.val;
+    }));
+  </script>
+</th:block>
+
+</body>
+</html>
